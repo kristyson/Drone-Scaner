@@ -23,16 +23,36 @@
 
 package dji.v5.ux.sample.showcase.defaultlayout;
 
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.content.DialogInterface;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.provider.MediaStore;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.widget.TextView;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.GravityCompat;
@@ -79,8 +99,6 @@ import dji.v5.ux.core.widget.setting.SettingWidget;
 import dji.v5.ux.core.widget.simulator.SimulatorIndicatorWidget;
 import dji.v5.ux.core.widget.systemstatus.SystemStatusWidget;
 import dji.v5.ux.gimbal.GimbalFineTuneWidget;
-import dji.v5.ux.map.MapWidget;
-import dji.v5.ux.mapkit.core.maps.DJIUiSettings;
 import dji.v5.ux.training.simulatorcontrol.SimulatorControlWidget;
 import dji.v5.ux.visualcamera.CameraNDVIPanelWidget;
 import dji.v5.ux.visualcamera.CameraVisiblePanelWidget;
@@ -88,10 +106,33 @@ import dji.v5.ux.visualcamera.zoom.FocalZoomWidget;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 
+import android.graphics.Bitmap;
+import android.widget.Button;
+import android.widget.Toast;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
+import com.google.mlkit.vision.barcode.BarcodeScanning;
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.common.InputImage;
+import java.util.HashMap;
+import java.util.Map;
+
+
 /**
  * Displays a sample layout of widgets similar to that of the various DJI apps.
  */
 public class DefaultLayoutActivity extends AppCompatActivity {
+
+    private FirebaseFirestore db;
+    private FPVWidget fpvWidget;
+    private Button btnScanAndSend;
+    private Handler handler;
+    private Runnable runnable;
+    private int delayMillis = 4000;
+    private int delayMillis2 = 2000;
+    private boolean isScanning = false; // Variável para rastrear se o scanner está em execução
+
 
     //region Fields
     private final String TAG = LogUtils.getTag(this);
@@ -113,7 +154,6 @@ public class DefaultLayoutActivity extends AppCompatActivity {
     protected CameraVisiblePanelWidget visualCameraPanel;
     protected FocalZoomWidget focalZoomWidget;
     protected SettingWidget settingWidget;
-    protected MapWidget mapWidget;
     protected TopBarPanelWidget topBarPanel;
     protected ConstraintLayout fpvParentView;
     private DrawerLayout mDrawerLayout;
@@ -162,7 +202,7 @@ public class DefaultLayoutActivity extends AppCompatActivity {
         horizontalSituationIndicatorWidget = findViewById(R.id.widget_horizontal_situation_indicator);
         gimbalAdjustDone = findViewById(R.id.fpv_gimbal_ok_btn);
         gimbalFineTuneWidget = findViewById(R.id.setting_menu_gimbal_fine_tune);
-        mapWidget = findViewById(R.id.widget_map);
+
         cameraControlsWidget.getExposureSettingsIndicatorWidget().setStateChangeResourceId(R.id.panel_camera_controls_exposure_settings);
 
         initClickListener();
@@ -175,20 +215,248 @@ public class DefaultLayoutActivity extends AppCompatActivity {
         secondaryFPVWidget.setSurfaceViewZOrderOnTop(true);
         secondaryFPVWidget.setSurfaceViewZOrderMediaOverlay(true);
 
-        mapWidget.initAMap(map -> {
-            // map.setOnMapClickListener(latLng -> onViewClick(mapWidget));
-            DJIUiSettings uiSetting = map.getUiSettings();
-            if (uiSetting != null) {
-                uiSetting.setZoomControlsEnabled(false);//hide zoom widget
-            }
-        });
-        mapWidget.onCreate(savedInstanceState);
+
         getWindow().setBackgroundDrawable(new ColorDrawable(Color.BLACK));
 
         //实现RTK监测网络，并自动重连机制
         DJINetworkManager.getInstance().addNetworkStatusListener(networkStatusListener);
 
+
+        // Inicializa o FPVWidget
+        fpvWidget = findViewById(R.id.widget_primary_fpv);
+
+        // Inicialize o Firestore
+        db = FirebaseFirestore.getInstance();
+
+        // Inicialize o botão
+        btnScanAndSend = findViewById(R.id.btnStartAndStop);
+
+        // Inicialize o handler
+        handler = new Handler();
+
+        // Inicialize o runnable
+        runnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isScanning) {
+                    if (paletCode == null || posicaoCode== null ) {
+                        scanBarcodeAndSendToFirestore();
+                        handler.postDelayed(this, delayMillis);
+
+                    } else {
+                        sendDataToFirestore(() -> handler.postDelayed(this, delayMillis));
+
+                    }
+                }
+            }
+        };
+
+        btnScanAndSend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Alternar entre iniciar e parar o scanner
+                if (isScanning) {
+                    stopScanning();
+                } else {
+                    startScanning();
+                }
+            }
+        });
+
+        Button btnEmpty = findViewById(R.id.btn_empty);
+
+        // Adicionar um ouvinte de clique ao botão
+        btnEmpty.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showConfirmEmpty();
+            }
+        });
+
+
     }
+
+    private void startScanning() {
+        isScanning = true;
+        btnScanAndSend.setText("Stop"); // Atualizar texto do botão para "Stop"
+        // Inicie o scanner quando o botão for pressionado
+        scanBarcodeAndSendToFirestore();
+        // Inicie chamadas recorrentes
+        handler.postDelayed(runnable, delayMillis);
+        updateTextView("palet", paletCode);
+        updateTextView("posicao", posicaoCode);
+    }
+
+    private void stopScanning() {
+        paletCode = null;
+        posicaoCode = null;
+        isScanning = false;
+        btnScanAndSend.setText("Start"); // Atualizar texto do botão para "Start"
+        // Remover chamadas recorrentes
+        handler.removeCallbacks(runnable);
+        updateTextView("palet", paletCode);
+        updateTextView("posicao", posicaoCode);
+
+    }
+
+    private void showConfirmEmpty() {
+        // Crie um AlertDialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Confirmação");
+        builder.setMessage("Deseja confirmar que o palet está vazio?");
+
+        // Adicione os botões "Confirmar" e "Cancelar"
+        builder.setPositiveButton("Confirmar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // Ao clicar em "Confirmar", atribuir "0" à variável paletCode
+                paletCode = "0";
+                showToast("Valor '0' atribuído a 'paletCode'.");
+            }
+        });
+
+        builder.setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // Ao clicar em "Cancelar", não fazer nada
+                showToast("Ação cancelada.");
+            }
+        });
+
+        // Exiba o AlertDialog
+        builder.show();
+    }
+
+
+    private String paletCode; // Variável para armazenar o código quando começa com 750 ou 200
+    private String posicaoCode; // Variável para armazenar o código em outros casos
+    private Bitmap croppedBitmap;
+
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public void scanBarcodeAndSendToFirestore() {
+        Bitmap capturedBitmap = fpvWidget.captureBitmap();
+
+
+        // Se o bitmap não for nulo, prossiga com o processamento do código de barras
+        if (capturedBitmap  != null) {
+            // Calcular a ROI (Region of Interest)
+            int width = capturedBitmap .getWidth();
+            int height = capturedBitmap .getHeight();
+            int rectWidth = width / 2;
+            int rectHeight = height / 2;
+            int x = (width - rectWidth) / 2;
+            int y = (height - rectHeight) / 2;
+
+            // Corrija a inicialização da variável de instância em vez de criar uma local
+            croppedBitmap = Bitmap.createBitmap(capturedBitmap , x, y, rectWidth, rectHeight);
+
+            // Usar a imagem recortada para a digitalização do código de barras
+            InputImage image = InputImage.fromBitmap(croppedBitmap, 0);
+
+            BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
+                    .setBarcodeFormats(
+                            Barcode.FORMAT_CODE_39,
+                            Barcode.FORMAT_CODE_128)
+                    .build();
+
+            BarcodeScanner scanner = BarcodeScanning.getClient(options);
+
+            scanner.process(image)
+                    .addOnSuccessListener(barcodes -> {
+                        if (!barcodes.isEmpty()) {
+                            String barcodeValue = barcodes.get(0).getRawValue();
+
+                            // Verificar se o código de barras começa com "750" ou "200"
+                            if (barcodeValue.startsWith("750") || barcodeValue.startsWith("200")){
+                                if (paletCode == null) {
+                                    paletCode = barcodeValue;
+                                    updateTextView("palet", paletCode);
+
+                                } else if (posicaoCode == null) {
+                                    showToast("Leia o código da Posição");}
+
+                            } else if (barcodeValue.matches("\\d{2}-\\d{2}-\\d{3}")){
+                                if (posicaoCode == null) {
+                                    posicaoCode = barcodeValue;
+                                    updateTextView("posicao", posicaoCode);
+                                } else if (paletCode == null) {
+                                    showToast("Leia o código do Palet");}
+
+                            } else {
+                                showToast("Código Inválido");}
+
+                        } else {
+                            showToast("Nenhum código de barras encontrado");
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        // Tratar erro
+                    });
+        } else {
+            showToast("Falha ao obter o bitmap do FPVWidget");
+        }
+    }
+
+    private void updateTextView(String textViewName, String value) {
+        switch (textViewName) {
+            case "palet":
+                // Atualizar a TextView "palet" com o valor do código
+                // Certifique-se de substituir R.id.textview_palet pelo ID real da sua TextView "palet"
+                TextView paletTextView = findViewById(R.id.palet);
+                if (paletTextView != null) {
+                    paletTextView.setText(value);
+                }
+                break;
+            case "posicao":
+                // Atualizar a TextView "posicao" com o valor do código
+                // Certifique-se de substituir R.id.textview_posicao pelo ID real da sua TextView "posicao"
+                TextView posicaoTextView = findViewById(R.id.posicao);
+                if (posicaoTextView != null) {
+                    posicaoTextView.setText(value);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void sendDataToFirestore(Runnable onCompletion) {
+        // Obtenha a data atual no formato "dd-MM-yyyy"
+        String currentDate = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(new Date());
+
+        // Crie um mapa para representar os dados que você deseja enviar
+        Map<String, Object> data = new HashMap<>();
+        data.put("palet", paletCode);
+
+        db.collection(currentDate) // Use a data como nome da coleção
+                .document(posicaoCode) // Use a variável posicaoCode como nome do documento
+                .set(data)
+                .addOnSuccessListener(aVoid -> {
+                    // Ação bem-sucedida, por exemplo, exibir um Toast
+                    // ou realizar outras operações após o sucesso
+                    showToast("Dados enviados > '" + currentDate + "'!");
+                    if (onCompletion != null) {
+                        onCompletion.run();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // Tratamento de falha, por exemplo, exibir um Toast
+                    // ou realizar outras operações em caso de falha
+                    showToast("Erro ao enviar dados: " + e.getMessage());
+                });
+        // Limpe as variáveis após o envio
+        paletCode = null;
+        posicaoCode = null;
+        updateTextView("palet", "");
+        updateTextView("posicao", "");
+    }
+
+    private void showToast(String message) {
+        // Método auxiliar para exibir um Toast
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+    
 
     private void isGimableAdjustClicked(BroadcastValues broadcastValues) {
         if (mDrawerLayout.isDrawerOpen(GravityCompat.END)) {
@@ -235,7 +503,7 @@ public class DefaultLayoutActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mapWidget.onDestroy();
+
         MediaDataCenter.getInstance().getVideoStreamManager().clearAllStreamSourcesListeners();
         removeChannelStateListener();
         DJINetworkManager.getInstance().removeNetworkStatusListener(networkStatusListener);
@@ -245,7 +513,7 @@ public class DefaultLayoutActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        mapWidget.onResume();
+
         compositeDisposable = new CompositeDisposable();
         compositeDisposable.add(systemStatusListPanelWidget.closeButtonPressed()
                 .observeOn(AndroidSchedulers.mainThread())
@@ -282,7 +550,7 @@ public class DefaultLayoutActivity extends AppCompatActivity {
             compositeDisposable.dispose();
             compositeDisposable = null;
         }
-        mapWidget.onPause();
+
         super.onPause();
         ViewUtil.setKeepScreen(this, false);
     }

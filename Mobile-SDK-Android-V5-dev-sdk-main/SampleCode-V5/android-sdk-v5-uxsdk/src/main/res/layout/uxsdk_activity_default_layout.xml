@@ -62,7 +62,111 @@
                     app:layout_constraintHeight_percent="0.80"
                     app:layout_constraintStart_toStartOf="parent"
                     tools:layout_editor_absoluteX="0dp"
-                    tools:layout_editor_absoluteY="0dp" />
+                    tools:layout_editor_absoluteY="0dp">
+
+                </dji.v5.ux.cameracore.widget.fpvinteraction.FPVInteractionWidget>
+
+                <Button
+                    android:id="@+id/btnStartAndStop"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:background="@drawable/bg_btn_scan"
+                    android:elevation="10dp"
+                    android:fontFamily="@font/montserrat_alternates_medium"
+                    android:padding="14dp"
+                    android:text="Start"
+                    android:textColor="#000000"
+                    android:textSize="16sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.085"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.9" />
+
+                <Button
+                    android:id="@+id/btn_empty"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:background="@drawable/bg_btn_empty"
+                    android:elevation="10dp"
+                    android:fontFamily="@font/montserrat_alternates_medium"
+                    android:padding="14dp"
+                    android:text="Vazio"
+                    android:textColor="#000000"
+                    android:textSize="16sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.085"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.15" />
+
+
+                <TextView
+                    android:id="@+id/txt_posicao"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_view_txt"
+                    android:fontFamily="@font/montserrat_alternates_medium"
+                    android:text="  Posição:                               "
+                    android:textColor="#000000"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/txt_palet"
+                    app:layout_constraintHorizontal_bias="0.5"
+                    app:layout_constraintStart_toEndOf="@+id/widget_fpv_interaction"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.98" />
+
+                <TextView
+                    android:id="@+id/posicao"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="70dp"
+                    android:fontFamily="@font/montserrat_alternates_medium"
+                    android:text=""
+                    android:textColor="#000000"
+                    android:textSize="12sp"
+                    app:layout_constraintBottom_toBottomOf="@+id/txt_posicao"
+                    app:layout_constraintStart_toStartOf="@+id/txt_posicao"
+                    app:layout_constraintTop_toTopOf="@+id/txt_posicao"
+                    app:layout_constraintVertical_bias="0.98" />
+
+                <TextView
+                    android:id="@+id/txt_palet"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/uxsdk_15_dp"
+                    android:background="@drawable/bg_view_txt"
+                    android:fontFamily="@font/montserrat_alternates_medium"
+                    android:text="  Palet:                                       "
+                    android:textColor="#000000"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/widget_fpv_interaction"
+                    app:layout_constraintHorizontal_bias="0.5"
+                    app:layout_constraintStart_toEndOf="@+id/txt_posicao"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.98" />
+
+                <TextView
+                    android:id="@+id/palet"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="55dp"
+                    android:fontFamily="@font/montserrat_alternates_medium"
+                    android:text=""
+                    android:textColor="#000000"
+                    android:textSize="12sp"
+                    app:layout_constraintBottom_toBottomOf="@+id/txt_palet"
+                    app:layout_constraintStart_toStartOf="@+id/txt_palet"
+                    app:layout_constraintTop_toTopOf="@+id/txt_palet"
+                    app:layout_constraintVertical_bias="0.98" />
+
+
             </dji.v5.ux.core.widget.fpv.FPVWidget>
 
             <dji.v5.ux.core.widget.fpv.FPVWidget
@@ -80,13 +184,30 @@
                 app:uxsdk_interactionEnabled="false"
                 app:uxsdk_sourceCameraNameVisibility="true"
                 app:uxsdk_videoChannelType="secondaryStreamChannel" />
+
         </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <dji.v5.ux.core.widget.fpv.CenteredRectangleView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <dji.v5.ux.core.widget.hsi.HorizontalSituationIndicatorWidget
+            android:id="@+id/widget_horizontal_situation_indicator"
+            android:layout_width="230dp"
+            android:layout_height="120dp"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.98"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.98" />
 
         <dji.v5.ux.core.panel.topbar.TopBarPanelWidget
             android:id="@+id/panel_top_bar"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:background="@color/uxsdk_black"
+            android:background="@color/uxsdk_black_80_percent"
             android:paddingTop="@dimen/uxsdk_topbar_padding"
             android:paddingBottom="@dimen/uxsdk_topbar_padding"
             app:layout_constraintEnd_toEndOf="parent"
@@ -106,15 +227,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/panel_top_bar" />
 
-        <dji.v5.ux.core.widget.hsi.HorizontalSituationIndicatorWidget
-            android:id="@+id/widget_horizontal_situation_indicator"
-            android:layout_width="350dp"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/widget_auto_exposure_lock"
-            app:layout_constraintVertical_bias="0.95" />
 
         <dji.v5.ux.gimbal.GimbalFineTuneWidget
             android:id="@+id/setting_menu_gimbal_fine_tune"
@@ -272,17 +384,6 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
-        <dji.v5.ux.map.MapWidget
-            android:id="@+id/widget_map"
-            android:layout_width="@dimen/uxsdk_150_dp"
-            android:layout_height="@dimen/uxsdk_100_dp"
-            android:layout_marginEnd="12dp"
-            android:layout_marginBottom="12dp"
-
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:uxsdk_djiMap_mapType="normal" />
 
         <dji.v5.ux.core.panel.systemstatus.SystemStatusListPanelWidget
             android:id="@+id/widget_panel_system_status_list"

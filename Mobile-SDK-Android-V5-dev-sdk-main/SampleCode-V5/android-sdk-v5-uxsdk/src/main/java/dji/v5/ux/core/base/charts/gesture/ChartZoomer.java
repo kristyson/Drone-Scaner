@@ -21,6 +21,7 @@ public class ChartZoomer {
     }
 
     public boolean startZoom(MotionEvent e, ChartComputator computator) {
+        this.zoomer.startZoom(2.0F);
         this.zoomer.forceFinished(true);
         this.scrollerStartViewport.set(computator.getCurrentViewport());
         if (!computator.rawPixelsToDataPoint(e.getX(), e.getY(), this.zoomFocalPoint)) {

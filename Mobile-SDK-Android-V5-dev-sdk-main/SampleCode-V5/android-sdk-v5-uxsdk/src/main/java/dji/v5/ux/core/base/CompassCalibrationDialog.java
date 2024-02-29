@@ -80,7 +80,7 @@ public class CompassCalibrationDialog extends BaseDialog implements View.OnClick
         initialize(context);
     }
 
-    protected CompassCalibrationDialog(@NonNull Context context, boolean cancelable, @Nullable DialogInterface.OnCancelListener cancelListener) {
+    protected CompassCalibrationDialog(@NonNull Context context, boolean cancelable, @Nullable OnCancelListener cancelListener) {
         super(context, cancelable, cancelListener);
         initialize(context);
     }

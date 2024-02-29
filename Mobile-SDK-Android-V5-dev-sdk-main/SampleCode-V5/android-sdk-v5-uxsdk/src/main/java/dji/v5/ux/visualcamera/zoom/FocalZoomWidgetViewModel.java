@@ -1,25 +1,28 @@
 package dji.v5.ux.visualcamera.zoom;
 
+import static com.amap.api.maps.model.BitmapDescriptorFactory.getContext;
+
+import android.content.Context;
 import android.os.SystemClock;
+import android.widget.Toast;
 
 import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
 import dji.sdk.keyvalue.key.CameraKey;
 import dji.sdk.keyvalue.key.DJIKey;
+import dji.v5.ux.core.base.DJISDKModel;
+import dji.v5.ux.core.communication.ObservableInMemoryKeyedStore;
 import dji.sdk.keyvalue.key.KeyTools;
 import dji.sdk.keyvalue.value.common.CameraLensType;
 import dji.sdk.keyvalue.value.common.ComponentIndexType;
-import dji.v5.manager.KeyManager;
-import dji.v5.ux.core.base.DJISDKModel;
+import dji.v5.manager.KeyManager; // Adicione esta linha
 import dji.v5.ux.core.base.ICameraIndex;
 import dji.v5.ux.core.base.WidgetModel;
-import dji.v5.ux.core.communication.ObservableInMemoryKeyedStore;
 import dji.v5.ux.core.util.DataProcessor;
 import io.reactivex.rxjava3.core.Emitter;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
-
 /**
  * Class Description
  *
@@ -28,22 +31,25 @@ import io.reactivex.rxjava3.disposables.Disposable;
  * <p>
  * Copyright (c) 2022, DJI All Rights Reserved.
  */
-class FocalZoomWidgetViewModel extends WidgetModel implements ICameraIndex {
+public class FocalZoomWidgetViewModel extends WidgetModel implements ICameraIndex {
 
+
+    private Context context;
     private static final int SAMPLE_TIME = 500;
     private ComponentIndexType cameraIndex = ComponentIndexType.LEFT_OR_MAIN;
     private CameraLensType lensType = CameraLensType.CAMERA_LENS_ZOOM;
     private Emitter<Double> mSendFocalLengthEmitter;
     private DJIKey<Double> cameraZoomRatiosKey;
     private DJIKey<Double> thermalZoomRatiosKey;
-    public final DataProcessor<Double> focalZoomRatios = DataProcessor.create(0.0D);
-    private final DataProcessor<Double> visibleFocalZoomRatios =  DataProcessor.create(0.0D);
-    private final DataProcessor<Double> thermalFocalZoomRatios =  DataProcessor.create(0.0D);
+    public final DataProcessor<Double> focalZoomRatios = DataProcessor.create(1.5D);
+    private final DataProcessor<Double> visibleFocalZoomRatios =  DataProcessor.create(1.5D);
+    private final DataProcessor<Double> thermalFocalZoomRatios =  DataProcessor.create(1.5D);
 
     private long mSendFocusDistanceTime = 0;
 
     public FocalZoomWidgetViewModel(@NonNull DJISDKModel djiSdkModel, @NonNull ObservableInMemoryKeyedStore uxKeyManager) {
         super(djiSdkModel, uxKeyManager);
+        this.context = context;
     }
 
     @Override
@@ -103,11 +109,19 @@ class FocalZoomWidgetViewModel extends WidgetModel implements ICameraIndex {
         addDisposable(disposable);
     }
 
+    public void activateZoom(double zoomValue) {
+        String message = "Ativando zoom com valor: " + zoomValue;
+        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        setFocusDistance(zoomValue);
+    }
+
+
     public void setFocusDistance(double value) {
         if (mSendFocalLengthEmitter != null) {
             mSendFocalLengthEmitter.onNext(value);
         }
     }
+
 
     private void sendFocusDistance(double value) {
         mSendFocusDistanceTime = SystemClock.uptimeMillis();
