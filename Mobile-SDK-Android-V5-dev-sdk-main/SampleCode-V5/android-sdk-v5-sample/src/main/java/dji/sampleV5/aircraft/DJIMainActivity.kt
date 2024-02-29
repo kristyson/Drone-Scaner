@@ -73,8 +73,8 @@ abstract class DJIMainActivity : AppCompatActivity() {
         // 需要校验这种情况，业界标准做法，基本所有app都需要这个
         if (!isTaskRoot && intent.hasCategory(Intent.CATEGORY_LAUNCHER) && Intent.ACTION_MAIN == intent.action) {
 
-            finish()
-            return
+                finish()
+                return
 
         }
 
