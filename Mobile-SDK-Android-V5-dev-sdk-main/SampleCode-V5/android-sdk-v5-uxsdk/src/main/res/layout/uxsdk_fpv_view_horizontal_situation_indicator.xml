@@ -14,14 +14,15 @@
 
     <dji.v5.ux.core.widget.hsi.SpeedDisplayWidget
         android:id="@+id/pfd_hsi_speed_display"
-        android:layout_width="@dimen/uxsdk_96_dp"
-        android:layout_height="wrap_content"
+        android:layout_width="0.1dp"
+        android:layout_height="0.1dp"
         android:layout_centerVertical="true"
         android:layout_marginStart="@dimen/uxsdk_30_dp"
         android:layout_marginEnd="@dimen/uxsdk_50_dp"
         android:layout_toStartOf="@id/anchor"
         android:paddingTop="@dimen/uxsdk_11_dp"
-        android:textColor="@color/uxsdk_white" />
+        android:textColor="@color/uxsdk_white"
+        android:visibility="visible" />
 
     <dji.v5.ux.core.ui.hsi.HSIView
         android:id="@+id/pfd_hsi_view"
@@ -47,12 +48,13 @@
 
     <dji.v5.ux.core.widget.hsi.GimbalPitchBarWidget
         android:id="@+id/pfd_hsi_gimbal_pitch_display"
-        android:layout_width="@dimen/uxsdk_60_dp"
-        android:layout_height="@dimen/uxsdk_68_dp"
+        android:layout_width="0.1dp"
+        android:layout_height="0.1dp"
         android:layout_alignEnd="@id/pfd_hsi_speed_display"
         android:layout_centerVertical="true"
         android:paddingTop="@dimen/uxsdk_17_dp"
         android:paddingBottom="@dimen/uxsdk_4_dp"
+        android:visibility="visible"
         app:uxsdk_gpb_bar_color="#26ffffff"
         app:uxsdk_gpb_bar_max_value="120"
         app:uxsdk_gpb_bar_min_value="-120"
@@ -71,10 +73,11 @@
 
     <dji.v5.ux.core.widget.hsi.AttitudeDisplayWidget
         android:id="@+id/pfd_hsi_attitude_display"
-        android:layout_width="@dimen/uxsdk_96_dp"
-        android:layout_height="wrap_content"
+        android:layout_width="0.1dp"
+        android:layout_height="0.1dp"
         android:layout_centerVertical="true"
         android:layout_marginStart="@dimen/uxsdk_50_dp"
         android:layout_toEndOf="@id/anchor"
-        android:paddingTop="@dimen/uxsdk_13_dp" />
+        android:paddingTop="@dimen/uxsdk_13_dp"
+        android:visibility="visible" />
 </RelativeLayout>
