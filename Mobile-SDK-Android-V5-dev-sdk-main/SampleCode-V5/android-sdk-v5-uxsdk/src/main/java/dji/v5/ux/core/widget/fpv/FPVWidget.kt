@@ -25,8 +25,13 @@ package dji.v5.ux.core.widget.fpv
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.ColorStateList
+import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
+import android.os.Build
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.AttributeSet
+import android.view.PixelCopy
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -35,6 +40,7 @@ import android.widget.TextView
 import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
 import androidx.annotation.FloatRange
+import androidx.annotation.RequiresApi
 import androidx.annotation.StyleRes
 import androidx.constraintlayout.widget.Guideline
 import androidx.core.content.res.use
@@ -65,6 +71,7 @@ private const val TAG = "FPVWidget"
 private const val ORIGINAL_SCALE = 1f
 private const val LANDSCAPE_ROTATION_ANGLE = 0
 
+
 /**
  * This widget shows the video feed from the camera.
  */
@@ -74,6 +81,7 @@ open class FPVWidget @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : ConstraintLayoutWidget<ModelState>(context, attrs, defStyleAttr),
     SurfaceHolder.Callback {
+
     private var viewWidth = 0
     private var viewHeight = 0
     private var rotationAngle = 0
@@ -331,6 +339,8 @@ open class FPVWidget @JvmOverloads constructor(
                 true
             )
             videoDecoder!!.onResume()
+
+
         }
     }
 
@@ -576,4 +586,45 @@ open class FPVWidget @JvmOverloads constructor(
      * Class defines the widget state updates
      */
     sealed class ModelState
+
+
+    // Adicione este método à classe FPVWidget
+    @RequiresApi(Build.VERSION_CODES.N)
+    open fun captureBitmap(): Bitmap? {
+        // Certifique-se de que o SurfaceView está criado e tem dimensões válidas
+        if (fpvSurfaceView.width <= 0 || fpvSurfaceView.height <= 0) {
+            return null
+        }
+
+        // Crie um bitmap do tamanho do SurfaceView
+        val bitmap = Bitmap.createBitmap(
+            fpvSurfaceView.width,
+            fpvSurfaceView.height,
+            Bitmap.Config.ARGB_8888
+        )
+
+        // Crie um handler thread para executar a operação PixelCopy
+        val handlerThread = HandlerThread("PixelCopyThread")
+        handlerThread.start()
+
+        // Use um handler para executar a operação PixelCopy
+        val handler = Handler(handlerThread.looper)
+
+        // Execute a operação PixelCopy para copiar o conteúdo do SurfaceView para o bitmap
+        PixelCopy.request(fpvSurfaceView, bitmap, { copyResult ->
+            if (copyResult == PixelCopy.SUCCESS) {
+                // A operação foi bem-sucedida, você pode usar o bitmap aqui
+            } else {
+                // Falha na operação PixelCopy
+            }
+
+            // Certifique-se de liberar recursos após a conclusão
+            handlerThread.quitSafely()
+        }, handler)
+
+        // Retorne o bitmap (pode ser nulo, pois a operação PixelCopy é assíncrona)
+        return bitmap
+    }
+
+
 }
