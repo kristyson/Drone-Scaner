@@ -73,8 +73,8 @@ abstract class DJIMainActivity : AppCompatActivity() {
         // 需要校验这种情况，业界标准做法，基本所有app都需要这个
         if (!isTaskRoot && intent.hasCategory(Intent.CATEGORY_LAUNCHER) && Intent.ACTION_MAIN == intent.action) {
 
-                finish()
-                return
+            finish()
+            return
 
         }
 
@@ -116,15 +116,6 @@ abstract class DJIMainActivity : AppCompatActivity() {
             text_core_info.text = it.coreInfo.toString()
         }
 
-        icon_sdk_forum.setOnClickListener {
-            Helper.startBrowser(this, StringUtils.getResStr(R.string.sdk_forum_url))
-        }
-        icon_release_node.setOnClickListener {
-            Helper.startBrowser(this, StringUtils.getResStr(R.string.release_node_url))
-        }
-        icon_tech_support.setOnClickListener {
-            Helper.startBrowser(this, StringUtils.getResStr(R.string.tech_support_url))
-        }
         view_base_info.setOnClickListener {
             baseMainActivityVm.doPairing {
                 showToast(it)
